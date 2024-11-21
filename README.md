@@ -12,3 +12,7 @@
 
 ## Despliegue
 
+
+```bash
+docker network create tiktoc-net
+```
