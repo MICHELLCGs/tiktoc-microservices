@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: tiktoc-db
+    environment:
+      - POSTGRES_USER=tiktoc
+      - POSTGRES_PASSWORD=TikToc-2024
+      - POSTGRES_DB=tiktocdb
+    networks:
+      - tiktoc_net
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.2
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false  # Deshabilita seguridad (para entornos de desarrollo)
+    ports:
+      - "9200:9200"  # Puerto para las API HTTP
+      - "9300:9300"  # Puerto para nodos en clúster
+    networks:
+      - tiktoc_net
+    volumes:
+      - ./elasticsearch_data:/usr/share/elasticsearch/data  # Volumen persistente
+
+  redis:
+    image: redis:7.2
+    container_name: redis
+    ports:
+      - "6379:6379"  # Puerto predeterminado de Redis
+    networks:
+      - tiktoc_net
+    volumes:
+      - ./redis_data:/data  # Volumen para persistencia de datos
+    command: ["redis-server", "--appendonly", "yes"]  # Activa el almacenamiento AOF para persistencia
+
+  redpanda:
+    image: vectorized/redpanda:latest
+    container_name: redpanda
+    ports:
+      - "9092:9092"   # Puerto para clientes Kafka
+      - "9644:9644"   # Puerto para la API REST de administración
+    networks:
+      - tiktoc_net
+    command:
+      - redpanda
+      - start
+      - --smp 1                          # Limita a un hilo (ajuste para pruebas locales)
+      - --memory 512M                    # Limita el uso de memoria
+      - --reserve-memory 0M
+      - --overprovisioned                # Optimización para contenedores
+      - --advertise-kafka-addr=localhost:9092
+    volumes:
+      - ./redpanda_data:/var/lib/redpanda/data  # Volumen para persistencia de datos
+
+networks:
+  tiktoc_net:
+    external: true
